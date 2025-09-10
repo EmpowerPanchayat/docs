@@ -1,0 +1,205 @@
+title E-Gram Sabha: Admin Flow
+
+participant Citizen
+participant Admintitle E-Gram Sabha: Admin Flow
+
+participant Citizen
+participant Admin
+participant Official
+participant Frontend
+participant Backend
+participant MongoDB
+participant CronJob
+participant VideoMomBackend
+participant HuggingFaceLLM
+participant JioTranslate
+participant JioSign
+participant JioMeet
+
+
+== Admin Flow ==
+
+Admin->Frontend: Login (username, password)
+Frontend->Backend: POST /api/auth/admin/login
+Backend->MongoDB: Find admin by username & role
+MongoDB-->Backend: Admin data
+Backend-->Frontend: Auth token / error
+Frontend-->Admin: Show admin dashboard
+
+Admin->Frontend: Manage Officials
+Frontend->Backend: GET/POST/PUT /api/officials (add/update)
+Backend->MongoDB: Fetch/Insert/Update official
+MongoDB-->Backend: Official created/updated
+Backend-->Frontend: Confirmation
+Frontend-->Admin: Show result
+
+Admin->Frontend: Manage Panchayats
+Frontend->Backend: GET/POST/PUT /api/panchayats (add/update)
+Backend->MongoDB: Fetch/Insert/Update panchayats
+MongoDB-->Backend: panchayats created/updated
+Backend-->Frontend: Confirmation
+Frontend-->Admin: Show result
+
+Admin->Frontend: Import Mmebers
+Frontend->Backend: POST /api/import-csv
+Backend->MongoDB: Fetch/Insert/Update panchayats
+MongoDB-->Backend: panchayats created/updated
+Backend-->Frontend: Confirmation
+Frontend-->Admin: Show result
+
+Admin->Frontend: Manage Members
+Frontend->Backend: GET /api/users?panchayatId={ID}
+Backend->MongoDB: Fetch citizen(s)
+MongoDB-->Backend: user data
+Backend-->Frontend: user data
+Frontend-->Admin: user data
+
+Admin->Frontend: View Member
+Frontend->Backend: GET /api/users/{voterIdNumber}/face?panchayatId={panchayatId}
+Backend->MongoDB: Fetch citizen faceImageId
+MongoDB-->Backend: citizen faceImageId
+Backend-->Frontend: citizen faceImageId
+Frontend->Backend: GET /api/platform-configurations/camera
+Backend->MongoDB: Fetch camera configurations
+MongoDB-->Backend: camera configurations
+Backend-->Frontend: camera configurations
+Frontend-->Admin: camera configurations (Movement and blinks)
+Frontend->Backend: GET /api/users/682c43562e34934aabdd1e89/thumbnail
+Backend->MongoDB: Fetch citizen thumbnail photo
+MongoDB-->Backend: thumbnail photo
+Backend-->Frontend: thumbnail photo
+Frontend-->Admin: thumbnail photo
+
+Admin->Frontend: Zoom thumbnail photo
+Frontend->Backend: GET /api/users/face-image/{faceImageId}
+Backend->MongoDB: Fetch citizen faceImage
+MongoDB-->Backend: Citizen's photo
+Backend-->Frontend: Citizen's photo
+Frontend-->Admin: Citizen's photo
+
+Admin->Frontend: Start Camera
+Frontend->Backend: POST /api/users/register-face
+Backend->MongoDB: Update face descriptor info
+MongoDB-->Backend: success/Error
+Backend-->Frontend: success/Error
+Frontend-->Admin: success/Error
+
+Admin->Frontend: Register Member
+Frontend->Backend: GET /api/users/{voterIdNumber}/face?panchayatId={panchayatId}
+Backend->MongoDB: Fetch citizen faceImageId
+MongoDB-->Backend: citizen faceImageId not found
+Backend-->Frontend: Face image not found message
+Frontend->Backend: GET /api/platform-configurations/camera
+Backend->MongoDB: Fetch camera configurations
+MongoDB-->Backend: camera configurations
+Backend-->Frontend: camera configurations
+Frontend-->Admin: camera configurations (Movement and blinks)
+
+Admin->Frontend: Start Camera
+Frontend->Backend: POST /api/users/register-face
+Backend->MongoDB: Insert face descriptor info
+MongoDB-->Backend: success/Error
+Backend-->Frontend: success/Error
+Frontend-->Admin: success/Error
+
+Admin->Frontend: Logout
+Frontend-->Admin: Redirect to login
+participant Official
+participant Frontend
+participant Backend
+participant MongoDB
+participant CronJob
+participant VideoMomBackend
+participant HuggingFaceLLM
+participant JioTranslate
+participant JioSign
+participant JioMeet
+
+
+== Admin Flow ==
+
+Admin->Frontend: Login (username, password)
+Frontend->Backend: POST /api/auth/admin/login
+Backend->MongoDB: Find admin by username & role
+MongoDB-->Backend: Admin data
+Backend-->Frontend: Auth token / error
+Frontend-->Admin: Show admin dashboard
+
+Admin->Frontend: Manage Officials
+Frontend->Backend: GET/POST/PUT /api/officials (add/update)
+Backend->MongoDB: Fetch/Insert/Update official
+MongoDB-->Backend: Official created/updated
+Backend-->Frontend: Confirmation
+Frontend-->Admin: Show result
+
+Admin->Frontend: Manage Panchayats
+Frontend->Backend: GET/POST/PUT /api/panchayats (add/update)
+Backend->MongoDB: Fetch/Insert/Update panchayats
+MongoDB-->Backend: panchayats created/updated
+Backend-->Frontend: Confirmation
+Frontend-->Admin: Show result
+
+Admin->Frontend: Import Mmebers
+Frontend->Backend: POST /api/import-csv
+Backend->MongoDB: Fetch/Insert/Update panchayats
+MongoDB-->Backend: panchayats created/updated
+Backend-->Frontend: Confirmation
+Frontend-->Admin: Show result
+
+Admin->Frontend: Manage Members
+Frontend->Backend: GET /api/users?panchayatId={ID}
+Backend->MongoDB: Fetch citizen(s)
+MongoDB-->Backend: user data
+Backend-->Frontend: user data
+Frontend-->Admin: user data
+
+Admin->Frontend: View Member
+Frontend->Backend: GET /api/users/{voterIdNumber}/face?panchayatId={panchayatId}
+Backend->MongoDB: Fetch citizen faceImageId
+MongoDB-->Backend: citizen faceImageId
+Backend-->Frontend: citizen faceImageId
+Frontend->Backend: GET /api/platform-configurations/camera
+Backend->MongoDB: Fetch camera configurations
+MongoDB-->Backend: camera configurations
+Backend-->Frontend: camera configurations
+Frontend-->Admin: camera configurations (Movement and blinks)
+Frontend->Backend: GET /api/users/682c43562e34934aabdd1e89/thumbnail
+Backend->MongoDB: Fetch citizen thumbnail photo
+MongoDB-->Backend: thumbnail photo
+Backend-->Frontend: thumbnail photo
+Frontend-->Admin: thumbnail photo
+
+Admin->Frontend: Zoom thumbnail photo
+Frontend->Backend: GET /api/users/face-image/{faceImageId}
+Backend->MongoDB: Fetch citizen faceImage
+MongoDB-->Backend: Citizen's photo
+Backend-->Frontend: Citizen's photo
+Frontend-->Admin: Citizen's photo
+
+Admin->Frontend: Start Camera
+Frontend->Backend: POST /api/users/register-face
+Backend->MongoDB: Update face descriptor info
+MongoDB-->Backend: success/Error
+Backend-->Frontend: success/Error
+Frontend-->Admin: success/Error
+
+Admin->Frontend: Register Member
+Frontend->Backend: GET /api/users/{voterIdNumber}/face?panchayatId={panchayatId}
+Backend->MongoDB: Fetch citizen faceImageId
+MongoDB-->Backend: citizen faceImageId not found
+Backend-->Frontend: Face image not found message
+Frontend->Backend: GET /api/platform-configurations/camera
+Backend->MongoDB: Fetch camera configurations
+MongoDB-->Backend: camera configurations
+Backend-->Frontend: camera configurations
+Frontend-->Admin: camera configurations (Movement and blinks)
+
+Admin->Frontend: Start Camera
+Frontend->Backend: POST /api/users/register-face
+Backend->MongoDB: Insert face descriptor info
+MongoDB-->Backend: success/Error
+Backend-->Frontend: success/Error
+Frontend-->Admin: success/Error
+
+Admin->Frontend: Logout
+Frontend-->Admin: Redirect to login
