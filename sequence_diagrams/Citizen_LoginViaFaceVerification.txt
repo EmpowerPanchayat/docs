@@ -1,0 +1,64 @@
+title Citizen Face Login
+
+participant Citizen
+participant Frontend
+participant Backend
+participant MongoDB
+
+Citizen->Frontend: Enter Panchayat & Voter ID, Start Login
+Frontend->Backend: POST /auth/citizen/face-login/init
+
+Backend->MongoDB: Find Panchayat by ID
+alt Panchayat not found
+    Backend-->Frontend: 404 Panchayat not found
+    Frontend-->Citizen: Show "Panchayat not found" error
+else
+    Backend->MongoDB: Find users with matching voter ID
+    alt No users found
+        Backend-->Frontend: 404 No registered users found
+        Frontend-->Citizen: Show "No registered users" error
+    else
+        Backend->Backend: Generate random securityToken (plain)
+        Backend->Backend: Hash token (SHA-256)
+        Backend->MongoDB: Save hashed token + expiry in user
+        MongoDB-->Backend: User updated
+        Backend-->Frontend: Success (userData, plain securityToken)
+
+        Frontend->Backend: POST /auth/citizen/face-login/verify (faceDescriptor, userId, plain securityToken)
+        alt Missing info
+            Backend-->Frontend: 400 User identification and security token required
+            Frontend-->Citizen: Show "User identification required" error
+        else Missing faceDescriptor
+            Backend-->Frontend: 400 Face descriptor required
+            Frontend-->Citizen: Show "Face descriptor required" error
+        else
+            Backend->MongoDB: Find user by ID
+            alt User(s) not found
+                Backend-->Frontend: 404 User not found
+                Frontend-->Citizen: Show "User not found" error
+            else
+                Backend-->Backend: Verify securityToken (hash match + expiry) and compare face
+                alt Invalid/expired token
+                    Backend-->Frontend: 401 Invalid or expired security token
+                    Frontend-->Citizen: Show "Invalid/expired token" error
+                else Face not matched
+                    Backend-->Frontend: 401 Face verification failed
+                    Frontend-->Citizen: Show "Face verification failed" error
+                else Multiple matches
+                    Backend-->Frontend: 401 Multiple potential matches found
+                    Frontend-->Citizen: Show "Multiple matches found" error
+                else Success
+                    Backend->MongoDB: Clear securityToken, set lastLogin
+                    MongoDB-->Backend: User updated
+                    Backend-->Frontend: Success (user, token, refreshToken)
+                    Frontend-->Citizen: Login success
+                end
+            end
+        end
+    end
+end
+
+alt Any unexpected error
+    Backend-->Frontend: 500 Error during login/verification
+    Frontend-->Citizen: Show "Server error"
+end

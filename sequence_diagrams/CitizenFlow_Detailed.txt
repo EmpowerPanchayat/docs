@@ -1,0 +1,172 @@
+title E-Gram Sabha : Citizen Flow
+
+participant Citizen
+participant Admin
+participant Official
+participant Frontend
+participant Backend
+participant MongoDB
+participant CronJob
+participant VideoMomBackend
+participant HuggingFaceLLM
+participant JioTranslate
+participant JioSign
+participant JioMeet
+
+== Citizen Flow ==
+
+Citizen->Frontend: Login (with Face Recognition)
+Frontend->Backend: POST api/auth/citizen/face-login/verify (face data)
+Backend->MongoDB: Fetch face data
+MongoDB-->Backend: Recognition result
+Backend-->Backend: Verify security token(s) and compare face
+Backend-->Frontend: Auth token+data / error
+Frontend-->Citizen: Show home page or error
+
+Citizen->Frontend: View List of issues/suggestions
+Frontend->Backend: GET /api/issues
+Backend->MongoDB: Fetch issues based on query params like panchayatId
+MongoDB-->Backend: Issues data
+Backend-->Frontend: Issues data
+Frontend-->Citizen: Show my/all issues
+
+Citizen->Frontend: View any Past meeting details
+Frontend->Backend: GET /api/gram-sabha/{gramSabhaId}, rsvp, attendance, stats
+Backend->MongoDB: Fetch data
+MongoDB-->Backend: Gram sabha details
+Backend-->Frontend: Gram sabha details
+Frontend-->Citizen: Selected Past Gram sabha details
+
+Citizen->Frontend: View Upcoming meeting details
+Frontend->Backend: GET /api/gram-sabha/{gramSabhaId}, rsvp, attendance, stats
+Backend->MongoDB: Fetch data
+MongoDB-->Backend: Gram sabha details
+Backend-->Frontend: Gram sabha details
+Frontend-->Citizen: Selected Gram sabha details
+
+Citizen->Frontend: RSVP to Meeting
+Frontend->Backend: POST /api/gram-sabha/{gramSavhaId}/rsvp/{Id}
+Backend->MongoDB: Update RSVP
+MongoDB-->Backend: RSVP status
+Backend-->Frontend: RSVP confirmation
+Frontend-->Citizen: Show RSVP status
+
+Citizen->Frontend: Logout
+Frontend-->Citizen: Navigate to home page
+
+== Citizen Issue Reporting with Transcription & Jio Translate ==
+
+Citizen->Frontend: Submit Issue (in local language)
+Frontend->Backend: POST /api/issues (issueData)
+alt Missing/invalid token
+    Backend-->Frontend: 401 Unauthorized
+    Frontend-->Citizen: Show "Authentication error"
+else
+    Backend-->Backend: Validate required fields
+    alt Missing required fields
+        Backend-->Frontend: 400 Missing required fields
+        Frontend-->Citizen: Show "Please fill all required fields"
+    else
+        Backend->MongoDB: Find Panchayat by panchayatId
+        alt Panchayat not found
+            MongoDB-->Backend: Not found
+            Backend-->Frontend: 404 Panchayat not found
+            Frontend-->Citizen: Show "Panchayat not found"
+        else
+            Backend->MongoDB: Find creator and createdFor users
+            alt User(s) not found
+                MongoDB-->Backend: Not found
+                Backend-->Frontend: 404 User not found
+                Frontend-->Citizen: Show "User not found"
+            else Issue created
+                Backend->MongoDB: Insert issue document
+                MongoDB-->Backend: Issue saved (issueId)
+                Backend-->Frontend: Success, return issueId
+
+                alt Audio attachment present
+                    Frontend->Backend: POST /api/issues/upload-attachment (issueId, audio)
+                    alt Audio upload fails
+                        Backend-->Frontend: Error
+                        Frontend-->Frontend: Log error, continue
+                        Frontend-->Citizen: Show "Server error"
+                    else Audio upload succeeds
+                        alt Audio present
+                            Backend->VideoMomBackend: Transcribe & translate audio
+                            par Background Transcription [VideoMoM]
+                                loop For each audio chunk
+    VideoMomBackend->JioTranslate: POST /stt (chunk_i.wav, language)
+    JioTranslate-->VideoMomBackend: Raw Hindi transcription (chunk_i)
+end
+VideoMomBackend->VideoMomBackend: Stitch chunk_i results into single transcript
+VideoMomBackend->MongoDB: Save raw transcript for request_id
+                            else Background Enhancement & Translation [VideoMoM]
+                                VideoMomBackend->HuggingFaceLLM: POST /chat/completions (sends raw transcript + expert prompt)
+                                note right of HuggingFaceLLM: The LLM corrects the text and provides English and Hindi versions in a single JSON response.
+                                HuggingFaceLLM-->VideoMomBackend: Returns { corrected_transcription, english_translation, hindi_translation }
+                                VideoMomBackend->MongoDB: Saves final, enhanced, multi-lingual results for the request_id
+                            end
+                            alt Transcription and translation success
+                                MongoDB-->Backend: Issue updated
+                                Backend-->Frontend: Success
+                            else Transcription and translation error
+                                MongoDB-->Backend: Issue updated
+                                Backend-->Frontend: Error
+                            end
+                        else No audio present
+                            note right of Backend: No transcription needed
+                        end
+                    end
+                else Server/database error
+                    MongoDB-->Backend: Error
+                    Backend-->Frontend: 500 Error creating issue
+                    Frontend-->Citizen: Show "Server error"
+                end
+            end
+        end
+
+        alt File attachments present
+            loop For each file
+                Frontend->Backend: POST /api/issues/upload-attachment (issueId, file)
+                alt File upload fails
+                    Backend-->Frontend: Error
+                    Frontend-->Frontend: Log error, continue
+                    Frontend-->Citizen: Show "Server error"
+                else File upload succeeds
+                    Backend->MongoDB: Store file attachment
+                    MongoDB-->Backend: Attachment stored, update issue with attachmentId
+                    Backend-->Frontend: Success
+                end
+            end
+        end
+
+        Frontend-->Citizen: Show success message, reset form, redirect after delay
+    end
+end
+
+== CronJob for Pending Transcriptions ==
+
+CronJob->MongoDB: Find issues with pending transcription
+MongoDB-->CronJob: List of issues
+loop For each pending issue
+    CronJob->VideoMomBackend: Transcribe & translate audio
+    par Background Transcription [VideoMoM]
+        loop For each audio chunk
+    VideoMomBackend->JioTranslate: POST /stt (chunk_i.wav, language)
+    JioTranslate-->VideoMomBackend: Raw Hindi transcription (chunk_i)
+end
+VideoMomBackend->VideoMomBackend: Stitch chunk_i results into single transcript
+VideoMomBackend->MongoDB: Save raw transcript for request_id
+    else Background Enhancement & Translation [VideoMoM]
+        VideoMomBackend->HuggingFaceLLM: POST /chat/completions (sends raw transcript + expert prompt)
+        note right of HuggingFaceLLM: The LLM corrects the text and provides English and Hindi versions in a single JSON response.
+        HuggingFaceLLM-->VideoMomBackend: Returns { corrected_transcription, english_translation, hindi_translation }
+        VideoMomBackend->MongoDB: Saves final, enhanced, multi-lingual results for the request_id
+    end
+    alt Transcription and translation success
+        MongoDB-->Backend: Issue updated
+        Backend-->Frontend: Success
+    else Transcription and translation error
+        MongoDB-->Backend: Issue updated
+        Backend-->Frontend: Error
+    end
+end

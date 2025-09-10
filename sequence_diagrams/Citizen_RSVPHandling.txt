@@ -1,0 +1,40 @@
+title RSVP Handling Sequence Diagram
+
+participant Citizen
+participant Frontend
+participant Backend
+participant MongoDB
+
+== RSVP Success ==
+Citizen->Frontend: Click RSVP (Confirmed /Declined /Maybe)
+Frontend->Backend: POST /api/gram-sabha/:id/rsvp/:userId (status, comments)
+Backend->MongoDB: Find GramSabha by id
+MongoDB-->Backend: GramSabha found
+Backend->MongoDB: Find or upsert RSVP (gramSabhaId, userId)
+MongoDB-->Backend: RSVP created/updated
+Backend-->Frontend: RSVP success response
+Frontend-->Citizen: Show RSVP confirmation
+
+== Meeting Not Found ==
+Citizen->Frontend: Click RSVP
+Frontend->Backend: POST /api/gram-sabha/:id/rsvp/:userId
+Backend->MongoDB: Find GramSabha by id
+MongoDB-->Backend: Not found
+Backend-->Frontend: 404 Meeting not found
+Frontend-->Citizen: Show error
+
+== RSVP for Past Meeting ==
+Citizen->Frontend: Click RSVP
+Frontend->Backend: POST /api/gram-sabha/:id/rsvp/:userId
+Backend->MongoDB: Find GramSabha by id
+MongoDB-->Backend: GramSabha found (dateTime < now)
+Backend-->Frontend: 400 Cannot RSVP for past meetings
+Frontend-->Citizen: Show error
+
+== Server Error ==
+Citizen->Frontend: Click RSVP
+Frontend->Backend: POST /api/gram-sabha/:id/rsvp/:userId
+Backend->MongoDB: (unexpected error)
+MongoDB-->Backend: Error
+Backend-->Frontend: 500 Failed to handle RSVP
+Frontend-->Citizen: Show error
